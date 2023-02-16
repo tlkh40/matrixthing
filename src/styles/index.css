@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    prefers-color-scheme: dark;
+    color-scheme: dark;
+    @apply bg-slate-900
+}
