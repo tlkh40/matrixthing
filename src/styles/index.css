@@ -3,7 +3,10 @@
 @tailwind utilities;
 
 body {
-    prefers-color-scheme: dark;
-    color-scheme: dark;
-    @apply bg-slate-900
+    color-scheme: only dark;
+    @apply bg-slate-900 
+}
+
+h2 {
+    @apply text-white
 }

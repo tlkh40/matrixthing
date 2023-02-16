@@ -1,23 +1,40 @@
 import { Button } from '@/components/button';
 import { Field } from '@/components/field';
 import { Input } from '@/components/input';
-import { range } from '@/lib/matrix';
+import { Modal } from '@/components/modal';
+import { decode, matrixToArray, range } from '@/lib/matrix';
 import { Form, Formik } from 'formik';
+import { HomeIcon } from 'lucide-react';
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom';
+import { z } from 'zod';
 
 export default function MatrixDecode() {
   const [elements, setElements] = useState<null | number>(null);
   const [showTable, setShowTable] = useState(false);
+  const [showModal, setModal] = useState(false);
+  const [result, setResult] = useState('');
   return (
     <div>
+      <div className='flex justify-between mb-3 items-center'>
+        <h2 className='text-3xl font-semibold'>decode</h2>
+        <Link to='/' className='flex items-center justify-center h-12 w-12 bg-slate-800 rounded-full text-center text-white'>
+          <HomeIcon className='mx-auto' />
+        </Link>
+      </div>
       <div className={showTable ? 'blur' : ''}>
-        <label className='text-sm font-medium leading-none text-slate-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-70'>
-          Enter the amount of elements in the matrix
-        </label>
-        <Input name="elements" placeholder='4' type="number" value={String(elements)} onChange={(e) => setElements(parseInt(e.target.value))} />
-        <Button className='mt-2' disabled={((elements ?? 0) % 2 !== 0) && (elements ?? 0) > 1 && !showTable} onClick={() => setShowTable(true)}>
-          Next
-        </Button>
+        <form action="" onSubmit={(e) => {
+          e.preventDefault()
+          setShowTable(true)
+        }}>
+          <label className='text-sm font-medium leading-none text-slate-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-70'>
+            Enter the amount of elements in the matrix
+          </label>
+          <Input name="elements" placeholder='4' type="number" value={String(elements)} onChange={(e) => setElements(parseInt(e.target.value))} />
+          <Button className='mt-2' disabled={!z.number().min(1).multipleOf(2).safeParse(elements).success}>
+            Next
+          </Button>
+        </form>
       </div>
       {showTable && (
         <div className='mt-4'>
@@ -25,7 +42,11 @@ export default function MatrixDecode() {
             <h2 className='text-2xl text-slate-50 font-semibold mb-2'>Step 2: input your data</h2>
             <Button onClick={() => setShowTable(false)}>Back</Button>
           </div>
-          <Formik initialValues={{ data: [[], []] as number[][] }} onSubmit={(v) => { console.log(v) }}>
+          <Formik initialValues={{ data: [[], []] as number[][] }} onSubmit={(v) => {
+            const decoded = decode(matrixToArray(v.data))
+            setResult(decoded)
+            setModal(true)
+          }}>
             {({ values }) => (
               <Form>
                 <div className="relative overflow-x-auto">
@@ -35,9 +56,9 @@ export default function MatrixDecode() {
                         <th scope="col" className="px-6 py-4">
                           #
                         </th>
-                        {range(elements ?? 0).map((v, i) => (
+                        {range((elements ?? 0) / 2).map((v, i) => (
                           <th key={`${i}_col`} scope="col" className="px-6 py-4">
-                            Col {v + 1}
+                            Col {i + 1}
                           </th>
                         ))}
                       </tr>
@@ -52,16 +73,16 @@ export default function MatrixDecode() {
                           >
                             Row {i + 1}
                           </th>
-                          {range(elements ?? 0).map((n, i) => (
-                            <td className="px-6 py-4">
-                              <Field type="number" name={`data[${i}][${i}]`} />
+                          {range((elements ?? 0) / 2).map((n, ic) => (
+                            <td className="px-6 py-4" key={`r_${i}_${ic}`}>
+                              <Field type="number" name={`data[${i}][${ic}]`} />
                             </td>
                           ))}
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  <Button className='mt-2'>
+                  <Button className='mt-2' type='submit'>
                     Submit
                   </Button>
                 </div>
@@ -70,6 +91,20 @@ export default function MatrixDecode() {
           </Formik>
         </div>
       )}
+      <Modal closeModal={() => setModal(false)} openModal={() => setModal(true)} isOpen={showModal} title='Decoded message'>
+        <span className='text-white'>The message from the matrix is: </span>
+        <code className='whitespace-pre block bg-black p-3 text-white font-mono font-semibold overflow-x-scroll'>
+          {result}
+        </code>
+        <div className='mt-2'>
+          <Button onClick={() => {
+            setElements(0);
+            setShowTable(false);
+            setResult('');
+            setModal(false);
+          }}>Ok</Button>
+        </div>
+      </Modal>
     </div>
   )
 }
